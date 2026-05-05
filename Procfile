@@ -1,0 +1,1 @@
+web: gunicorn bizcaptial.wsgi --log-file -
