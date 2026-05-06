@@ -1,9 +1,11 @@
 from rest_framework import status
+from .models import User
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import RegisterSerializer, LoginSerializer,ProfileSerializer
+
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -45,4 +47,20 @@ class ProfileView(APIView):
 
     def get(self, request):
         serializer = ProfileSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class UserListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        role = request.query_params.get('role', None)
+        
+        # Exclude the current logged in user and users with no role
+        users = User.objects.exclude(id=request.user.id).exclude(role='')
+        
+        # Filter by role if provided
+        if role:
+            users = users.filter(role=role)
+        
+        serializer = ProfileSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
