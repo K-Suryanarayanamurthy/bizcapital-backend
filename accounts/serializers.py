@@ -38,6 +38,9 @@ class LoginSerializer(serializers.Serializer):
         return data
 
 class ProfileSerializer(serializers.ModelSerializer):
+    reviewer_name = serializers.SerializerMethodField()
+    reviewee_name = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
@@ -47,5 +50,15 @@ class ProfileSerializer(serializers.ModelSerializer):
             'role',
             'phone',
             'bio',
+            'linkedin_url',
             'date_joined',
+        ]
+        
+class UpdateProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'phone',
+            'bio',
+            'linkedin_url',
         ]

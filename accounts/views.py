@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer, LoginSerializer,ProfileSerializer
+from .serializers import RegisterSerializer, LoginSerializer,ProfileSerializer, UpdateProfileSerializer
 
 
 class RegisterView(APIView):
@@ -64,3 +64,20 @@ class UserListView(APIView):
         
         serializer = ProfileSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class UpdateProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        serializer = UpdateProfileSerializer(
+            request.user,
+            data=request.data,
+            partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Profile updated successfully!", "data": serializer.data},
+                status=status.HTTP_200_OK
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
