@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import User
+from django.contrib.auth import authenticate
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -18,8 +19,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             bio=validated_data.get('bio', ''),
         )
         return user
-    
-from django.contrib.auth import authenticate
+
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -37,10 +37,8 @@ class LoginSerializer(serializers.Serializer):
         data['user'] = user
         return data
 
-class ProfileSerializer(serializers.ModelSerializer):
-    reviewer_name = serializers.SerializerMethodField()
-    reviewee_name = serializers.SerializerMethodField()
 
+class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
@@ -53,7 +51,8 @@ class ProfileSerializer(serializers.ModelSerializer):
             'linkedin_url',
             'date_joined',
         ]
-        
+
+
 class UpdateProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
