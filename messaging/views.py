@@ -73,3 +73,27 @@ class ConversationView(APIView):
         )
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class UnreadCountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        count = Message.objects.filter(
+            receiver=request.user,
+            is_read=False
+        ).count()
+        return Response({'unread_count': count}, status=status.HTTP_200_OK)
+    
+class MarkAsReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        Message.objects.filter(
+            receiver=request.user,
+            sender_id=user_id,
+            is_read=False
+        ).update(is_read=True)
+        return Response(
+            {'message': 'Messages marked as read!'},
+            status=status.HTTP_200_OK
+        )
