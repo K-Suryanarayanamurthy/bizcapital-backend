@@ -31,6 +31,13 @@ class Proposal(models.Model):
         choices=STATUS_CHOICES,
         default='open'
     )
+
+    # New entrepreneur fields
+    founded_year = models.IntegerField(blank=True, null=True)
+    team_size = models.IntegerField(blank=True, null=True)
+    revenue_milestone = models.CharField(max_length=255, blank=True, null=True)
+    achievements = models.TextField(blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

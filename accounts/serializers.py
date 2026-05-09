@@ -49,6 +49,10 @@ class ProfileSerializer(serializers.ModelSerializer):
             'phone',
             'bio',
             'linkedin_url',
+            'investment_min',
+            'investment_max',
+            'investment_industries',
+            'portfolio_companies',
             'date_joined',
         ]
 
@@ -60,4 +64,8 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
             'phone',
             'bio',
             'linkedin_url',
+            'investment_min',
+            'investment_max',
+            'investment_industries',
+            'portfolio_companies',
         ]

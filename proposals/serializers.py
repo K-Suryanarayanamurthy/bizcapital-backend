@@ -15,6 +15,10 @@ class ProposalSerializer(serializers.ModelSerializer):
             'industry',
             'funding_needed',
             'status',
+            'founded_year',
+            'team_size',
+            'revenue_milestone',
+            'achievements',
             'created_at',
             'updated_at',
         ]
