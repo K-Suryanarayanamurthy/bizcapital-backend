@@ -91,3 +91,136 @@ class DeleteAccountView(APIView):
             {"message": "Account deleted successfully!"},
             status=status.HTTP_200_OK
         )
+    
+from django.core.mail import send_mail
+from .models import OTP
+
+class SendOTPView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "No account found with this email!"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Generate OTP
+        otp_obj = OTP.generate_otp(user)
+
+        # Send email
+        send_mail(
+            subject='BizCapital - Password Reset OTP',
+            message=f'''
+Hello {user.username}!
+
+Your OTP for password reset is: {otp_obj.otp}
+
+This OTP is valid for 10 minutes only.
+
+If you did not request this, please ignore this email.
+
+Best regards,
+BizCapital Team
+            ''',
+            from_email='k.madhavamurthy143@gmail.com',
+            recipient_list=[email],
+            fail_silently=False,
+        )
+
+        return Response(
+            {"message": "OTP sent to your email successfully!"},
+            status=status.HTTP_200_OK
+        )
+
+
+class VerifyOTPView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        otp_code = request.data.get('otp')
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "No account found with this email!"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            otp_obj = OTP.objects.filter(
+                user=user,
+                otp=otp_code,
+                is_used=False
+            ).latest('created_at')
+        except OTP.DoesNotExist:
+            return Response(
+                {"error": "Invalid OTP!"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not otp_obj.is_valid():
+            return Response(
+                {"error": "OTP has expired! Please request a new one."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Mark OTP as used
+        otp_obj.is_used = True
+        otp_obj.save()
+
+        return Response(
+            {"message": "OTP verified successfully!"},
+            status=status.HTTP_200_OK
+        )
+
+
+class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        new_password = request.data.get('new_password')
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "No account found with this email!"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        user.set_password(new_password)
+        user.save()
+
+        return Response(
+            {"message": "Password reset successfully! Please login with your new password."},
+            status=status.HTTP_200_OK
+        )
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+
+        if not request.user.check_password(old_password):
+            return Response(
+                {"error": "Current password is incorrect!"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        request.user.set_password(new_password)
+        request.user.save()
+
+        return Response(
+            {"message": "Password changed successfully! Please login again."},
+            status=status.HTTP_200_OK
+        )
