@@ -102,8 +102,17 @@ class SendOTPView(APIView):
     def post(self, request):
         email = request.data.get('email')
         try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
+            user = User.objects.filter(email=email).first()
+            if not user:
+                return Response(
+                    {"error": "No account found with this email!"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
             return Response(
                 {"error": "No account found with this email!"},
                 status=status.HTTP_404_NOT_FOUND
