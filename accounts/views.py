@@ -5,6 +5,8 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import RegisterSerializer, LoginSerializer,ProfileSerializer, UpdateProfileSerializer
+import resend
+from django.conf import settings
 
 
 class RegisterView(APIView):
@@ -80,7 +82,7 @@ class UpdateProfileView(APIView):
                 {"message": "Profile updated successfully!", "data": serializer.data},
                 status=status.HTTP_200_OK
             )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)  
 class DeleteAccountView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -92,7 +94,6 @@ class DeleteAccountView(APIView):
             status=status.HTTP_200_OK
         )
     
-from django.core.mail import send_mail
 from .models import OTP
 
 class SendOTPView(APIView):
@@ -107,34 +108,38 @@ class SendOTPView(APIView):
                 {"error": "No account found with this email!"},
                 status=status.HTTP_404_NOT_FOUND
             )
+        try:
+            otp_obj = OTP.generate_otp(user)
+            resend.api_key = settings.RESEND_API_KEY
 
-        # Generate OTP
-        otp_obj = OTP.generate_otp(user)
-
-        # Send email
-        send_mail(
-            subject='BizCapital - Password Reset OTP',
-            message=f'''
-Hello {user.username}!
-
-Your OTP for password reset is: {otp_obj.otp}
-
-This OTP is valid for 10 minutes only.
-
-If you did not request this, please ignore this email.
-
-Best regards,
-BizCapital Team
-            ''',
-            from_email='k.madhavamurthy143@gmail.com',
-            recipient_list=[email],
-            fail_silently=False,
-        )
-
-        return Response(
-            {"message": "OTP sent to your email successfully!"},
-            status=status.HTTP_200_OK
-        )
+            resend.Emails.send({
+                "from": "onboarding@resend.dev",
+                "to": email,
+                "subject": "BizCapital - Password Reset OTP",
+                "html": f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #1a56db;">BizCapital Password Reset</h2>
+                    <p>Hello <strong>{user.username}</strong>!</p>
+                    <p>Your OTP for password reset is:</p>
+                    <div style="background: #f0f4ff; padding: 20px; text-align: center; border-radius: 10px; margin: 20px 0;">
+                        <h1 style="color: #1a56db; font-size: 40px; letter-spacing: 10px;">{otp_obj.otp}</h1>
+                    </div>
+                    <p>This OTP is valid for <strong>10 minutes</strong> only.</p>
+                    <p>If you did not request this, please ignore this email.</p>
+                    <br>
+                    <p>Best regards,<br><strong>BizCapital Team</strong></p>
+                </div>
+                """
+            })
+            return Response(
+                {"message": "OTP sent to your email successfully!"},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class VerifyOTPView(APIView):
