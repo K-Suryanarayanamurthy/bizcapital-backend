@@ -112,9 +112,9 @@ class SendOTPView(APIView):
             otp_obj = OTP.generate_otp(user)
             resend.api_key = settings.RESEND_API_KEY
 
-            resend.Emails.send({
+            params = {
                 "from": "onboarding@resend.dev",
-                "to": email,
+                "to": [email],
                 "subject": "BizCapital - Password Reset OTP",
                 "html": f"""
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -130,9 +130,11 @@ class SendOTPView(APIView):
                     <p>Best regards,<br><strong>BizCapital Team</strong></p>
                 </div>
                 """
-            })
+            }
+
+            email_response = resend.Emails.send(params)
             return Response(
-                {"message": "OTP sent to your email successfully!"},
+                {"message": "OTP sent successfully!", "resend_id": str(email_response)},
                 status=status.HTTP_200_OK
             )
         except Exception as e:
