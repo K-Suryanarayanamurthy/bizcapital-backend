@@ -1,5 +1,3 @@
-import email
-
 from rest_framework import status
 from .models import User
 from rest_framework.response import Response
@@ -104,7 +102,7 @@ class SendOTPView(APIView):
     def post(self, request):
         email = request.data.get('email')
         try:
-            user = User.objects.filter(email=email).first()
+            user = User.objects.filter(email=email.strip()).first()
             if not user:
                 return Response(
                     {"error": "No account found with this email!"},
@@ -158,9 +156,8 @@ class VerifyOTPView(APIView):
         email = request.data.get('email')
         otp_code = request.data.get('otp')
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
+        user = User.objects.filter(email=email.strip()).first()
+        if not user:
             return Response(
                 {"error": "No account found with this email!"},
                 status=status.HTTP_404_NOT_FOUND
@@ -184,7 +181,6 @@ class VerifyOTPView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Mark OTP as used
         otp_obj.is_used = True
         otp_obj.save()
 
@@ -193,7 +189,6 @@ class VerifyOTPView(APIView):
             status=status.HTTP_200_OK
         )
 
-
 class ResetPasswordView(APIView):
     permission_classes = [AllowAny]
 
@@ -201,9 +196,8 @@ class ResetPasswordView(APIView):
         email = request.data.get('email')
         new_password = request.data.get('new_password')
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
+        user = User.objects.filter(email=email.strip()).first()
+        if not user:
             return Response(
                 {"error": "No account found with this email!"},
                 status=status.HTTP_404_NOT_FOUND
