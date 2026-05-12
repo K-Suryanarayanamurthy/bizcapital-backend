@@ -1,3 +1,5 @@
+import email
+
 from rest_framework import status
 from .models import User
 from rest_framework.response import Response
@@ -112,10 +114,6 @@ class SendOTPView(APIView):
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-            return Response(
-                {"error": "No account found with this email!"},
-                status=status.HTTP_404_NOT_FOUND
             )
         try:
             otp_obj = OTP.generate_otp(user)
