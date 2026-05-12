@@ -1,3 +1,4 @@
+# BizCapital API Views - Updated
 from rest_framework import status
 from .models import User
 from rest_framework.response import Response
