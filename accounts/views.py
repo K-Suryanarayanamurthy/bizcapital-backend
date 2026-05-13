@@ -97,6 +97,8 @@ class DeleteAccountView(APIView):
     
 from .models import OTP
 
+from django.core.mail import send_mail
+
 class SendOTPView(APIView):
     permission_classes = [AllowAny]
 
@@ -116,13 +118,14 @@ class SendOTPView(APIView):
             )
         try:
             otp_obj = OTP.generate_otp(user)
-            resend.api_key = settings.RESEND_API_KEY
 
-            params = {
-                "from": "onboarding@resend.dev",
-                "to": [email],
-                "subject": "BizCapital - Password Reset OTP",
-                "html": f"""
+            send_mail(
+                subject='BizCapital - Password Reset OTP',
+                message=f'Your OTP is: {otp_obj.otp}\nValid for 10 minutes.',
+                from_email='k.madhavamurthy143@gmail.com',
+                recipient_list=[email],
+                fail_silently=False,
+                html_message=f"""
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #1a56db;">BizCapital Password Reset</h2>
                     <p>Hello <strong>{user.username}</strong>!</p>
@@ -136,11 +139,9 @@ class SendOTPView(APIView):
                     <p>Best regards,<br><strong>BizCapital Team</strong></p>
                 </div>
                 """
-            }
-
-            email_response = resend.Emails.send(params)
+            )
             return Response(
-                {"message": "OTP sent successfully!", "resend_id": str(email_response)},
+                {"message": "OTP sent to your email successfully!"},
                 status=status.HTTP_200_OK
             )
         except Exception as e:
