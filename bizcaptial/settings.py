@@ -166,3 +166,6 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('BREVO_EMAIL_USER')
 EMAIL_HOST_PASSWORD = config('BREVO_SMTP_KEY')
 DEFAULT_FROM_EMAIL = 'k.madhavamurthy143@gmail.com'
+
+# Brevo API Key
+BREVO_API_KEY = config('BREVO_API_KEY')

@@ -6,7 +6,6 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import RegisterSerializer, LoginSerializer,ProfileSerializer, UpdateProfileSerializer
-import resend
 from django.conf import settings
 
 
@@ -97,7 +96,12 @@ class DeleteAccountView(APIView):
     
 from .models import OTP
 
-from django.core.mail import send_mail
+
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
+
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
 
 class SendOTPView(APIView):
     permission_classes = [AllowAny]
@@ -119,13 +123,18 @@ class SendOTPView(APIView):
         try:
             otp_obj = OTP.generate_otp(user)
 
-            send_mail(
-                subject='BizCapital - Password Reset OTP',
-                message=f'Your OTP is: {otp_obj.otp}\nValid for 10 minutes.',
-                from_email='k.madhavamurthy143@gmail.com',
-                recipient_list=[email],
-                fail_silently=False,
-                html_message=f"""
+            configuration = sib_api_v3_sdk.Configuration()
+            configuration.api_key['api-key'] = settings.BREVO_API_KEY
+
+            api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+                sib_api_v3_sdk.ApiClient(configuration)
+            )
+
+            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=[{"email": email, "name": user.username}],
+                sender={"email": "k.madhavamurthy143@gmail.com", "name": "BizCapital"},
+                subject="BizCapital - Password Reset OTP",
+                html_content=f"""
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #1a56db;">BizCapital Password Reset</h2>
                     <p>Hello <strong>{user.username}</strong>!</p>
@@ -140,9 +149,17 @@ class SendOTPView(APIView):
                 </div>
                 """
             )
+
+            api_instance.send_transac_email(send_smtp_email)
+
             return Response(
                 {"message": "OTP sent to your email successfully!"},
                 status=status.HTTP_200_OK
+            )
+        except ApiException as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         except Exception as e:
             return Response(
@@ -155,10 +172,10 @@ class VerifyOTPView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        email = request.data.get('email')
+        email = request.data.get('email').strip().lower()
         otp_code = request.data.get('otp')
 
-        user = User.objects.filter(email=email.strip()).first()
+        user = User.objects.filter(email=email.strip().lower()).first()
         if not user:
             return Response(
                 {"error": "No account found with this email!"},
